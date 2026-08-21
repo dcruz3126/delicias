@@ -9,6 +9,11 @@ const BUSINESS_NAME = "Delicias de Denise";
 // WhatsApp number in international format, digits only (no +, spaces or dashes)
 // Example for Puerto Rico: "17871234567"
 const WHATSAPP_NUMBER = "17871234567";
+// Paste the URL you get after deploying the Apps Script as a Web App
+// (Deploy > New deployment > Web app > Execute as: Me, Who has access: Anyone)
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxjd3pFQTXz1xdp89k4Q8YucODY965YWvn94ghH-GW6IiLsWiS94UCQ_hDV9DSulM/exec";
+// How long to keep items cached in this browser tab before re-fetching, in ms
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 // ============================================
 // Translations
@@ -75,28 +80,36 @@ const TRANSLATIONS = {
 };
 
 // ============================================
-// Menu items — edit names, descriptions, prices here
+// Menu items — fetched from the Google Sheet via Apps Script.
+// Edit item names, descriptions, prices, and images in the sheet,
+// not here. See google-apps-script/Code.gs for the API.
 // ============================================
-const ITEMS = {
-  candies: [
-    { icon: "🍬", es: { name: "Dulce de coco", desc: "Dulce tradicional de coco fresco rallado." }, en: { name: "Coconut candy", desc: "Traditional candy made with fresh grated coconut." }, price: "$5" },
-    { icon: "🥥", es: { name: "Besitos de coco", desc: "Pequeños bocados dulces de coco tostado." }, en: { name: "Coconut kisses", desc: "Small sweet bites of toasted coconut." }, price: "$6" },
-    { icon: "🍫", es: { name: "Dulce de leche", desc: "Suave y cremoso, hecho lentamente en casa." }, en: { name: "Dulce de leche", desc: "Soft and creamy, slow-cooked at home." }, price: "$5" },
-    { icon: "🍮", es: { name: "Tembleque", desc: "Postre de coco suave, espolvoreado con canela." }, en: { name: "Tembleque", desc: "Soft coconut pudding, dusted with cinnamon." }, price: "$6" },
-  ],
-  comida: [
-    { icon: "🍗", es: { name: "Arroz con pollo", desc: "Arroz sazonado con pollo guisado a la antigua." }, en: { name: "Rice with chicken", desc: "Seasoned rice with old-style stewed chicken." }, price: "$12" },
-    { icon: "🫘", es: { name: "Habichuelas guisadas", desc: "Habichuelas rojas guisadas con sofrito casero." }, en: { name: "Stewed beans", desc: "Red beans stewed with homemade sofrito." }, price: "$8" },
-    { icon: "🍖", es: { name: "Pernil", desc: "Pernil horneado lento, jugoso y bien sazonado." }, en: { name: "Roast pork", desc: "Slow-roasted pork, juicy and well seasoned." }, price: "$14" },
-    { icon: "🍌", es: { name: "Tostones", desc: "Plátanos verdes fritos y aplastados, crujientes." }, en: { name: "Tostones", desc: "Crispy fried and flattened green plantains." }, price: "$6" },
-  ],
-  pasteles: [
-    { icon: "🎁", es: { name: "Pasteles de cerdo", desc: "Pasteles tradicionales rellenos de cerdo guisado." }, en: { name: "Pork pasteles", desc: "Traditional pasteles filled with stewed pork." }, price: "$3 c/u" },
-    { icon: "🌿", es: { name: "Pasteles de pollo", desc: "Masa de guineo y yautía rellena de pollo." }, en: { name: "Chicken pasteles", desc: "Plantain and yautía dough filled with chicken." }, price: "$3 c/u" },
-    { icon: "🧀", es: { name: "Pasteles de queso", desc: "Versión dulce y suave con queso, ideal de postre." }, en: { name: "Cheese pasteles", desc: "Soft, sweet version with cheese, great as dessert." }, price: "$3 c/u" },
-    { icon: "📦", es: { name: "Docena de pasteles", desc: "Una docena mixta, perfecta para compartir." }, en: { name: "Dozen pasteles", desc: "A mixed dozen, perfect for sharing." }, price: "$32" },
-  ],
-};
+let itemsCache = null; // in-memory cache for this page load
+
+async function fetchItems() {
+  if (itemsCache) return itemsCache;
+
+  const sessionCached = sessionStorage.getItem("dd_items_cache");
+  if (sessionCached) {
+    try {
+      const parsed = JSON.parse(sessionCached);
+      if (Date.now() - parsed.ts < CACHE_TTL_MS) {
+        itemsCache = parsed.data;
+        return itemsCache;
+      }
+    } catch (e) {
+      // ignore bad cache, fall through to fetch
+    }
+  }
+
+  const res = await fetch(APPS_SCRIPT_URL);
+  if (!res.ok) throw new Error("Failed to load menu items");
+  const data = await res.json();
+
+  itemsCache = data;
+  sessionStorage.setItem("dd_items_cache", JSON.stringify({ ts: Date.now(), data }));
+  return data;
+}
 
 // ============================================
 // Language handling
@@ -140,19 +153,47 @@ function buildWhatsAppLink(itemName, lang) {
 // ============================================
 // Render item cards for a category page
 // ============================================
-function renderItems(category, lang) {
+async function renderItems(category, lang) {
   const grid = document.querySelector("[data-item-grid]");
-  if (!grid || !ITEMS[category]) return;
+  if (!grid) return;
   const t = TRANSLATIONS[lang];
 
-  grid.innerHTML = ITEMS[category]
+  grid.innerHTML = `<p class="grid-msg">${lang === "es" ? "Cargando el menú..." : "Loading the menu..."}</p>`;
+
+  let allItems;
+  try {
+    allItems = await fetchItems();
+  } catch (err) {
+    grid.innerHTML = `<p class="grid-msg grid-msg-error">${
+      lang === "es"
+        ? "No pudimos cargar el menú. Intenta de nuevo más tarde."
+        : "We couldn't load the menu. Please try again later."
+    }</p>`;
+    return;
+  }
+
+  const items = allItems
+    .filter((item) => item.category === category)
+    .sort((a, b) => a.order - b.order);
+
+  if (!items.length) {
+    grid.innerHTML = `<p class="grid-msg">${
+      lang === "es" ? "Pronto agregaremos productos aquí." : "Items coming soon."
+    }</p>`;
+    return;
+  }
+
+  grid.innerHTML = items
     .map((item) => {
-      const name = item[lang].name;
-      const desc = item[lang].desc;
+      const name = item.name[lang];
+      const desc = item.desc[lang];
       const link = buildWhatsAppLink(name, lang);
+      const photo = item.image
+        ? `<img src="${item.image}" alt="${name}" loading="lazy">`
+        : `<span class="item-photo-fallback">🍽️</span>`;
       return `
         <article class="item-card">
-          <div class="item-photo">${item.icon}</div>
+          <div class="item-photo">${photo}</div>
           <div class="item-body">
             <h3>${name}</h3>
             <p>${desc}</p>
