@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comida — Delicias de Denise</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="nav-brand" data-business-name>Delicias de Denise</a>
+
+      <ul class="nav-links">
+        <li><a href="index.html" data-i18n="nav_home">Inicio</a></li>
+        <li><a href="candies.html" data-i18n="nav_candies">Dulces</a></li>
+        <li><a href="comida.html" class="active" data-i18n="nav_comida">Comida</a></li>
+        <li><a href="pasteles.html" data-i18n="nav_pasteles">Pasteles</a></li>
+      </ul>
+
+      <div class="nav-right">
+        <div class="lang-toggle">
+          <button data-lang="es" type="button">ES</button>
+          <button data-lang="en" type="button">EN</button>
+        </div>
+        <button class="nav-toggle" type="button" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <header class="page-header">
+    <div class="container">
+      <h1 data-i18n="page_comida_title">Comida</h1>
+      <p data-i18n="page_comida_sub">Platos preparados frescos, al estilo de casa.</p>
+    </div>
+  </header>
+
+  <main class="items-section">
+    <div class="container">
+      <a href="index.html" class="back-link">← <span data-i18n="back_home">Volver al inicio</span></a>
+      <div class="item-grid" data-item-grid="comida" style="margin-top:28px;"></div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-brand" data-business-name>Delicias de Denise</div>
+      <p data-i18n="footer_tagline">Comida casera hecha con amor.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

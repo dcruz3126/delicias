@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delicias de Denise</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="nav-brand" data-business-name>Delicias de Denise</a>
+
+      <ul class="nav-links">
+        <li><a href="index.html" class="active" data-i18n="nav_home">Inicio</a></li>
+        <li><a href="candies.html" data-i18n="nav_candies">Dulces</a></li>
+        <li><a href="comida.html" data-i18n="nav_comida">Comida</a></li>
+        <li><a href="pasteles.html" data-i18n="nav_pasteles">Pasteles</a></li>
+      </ul>
+
+      <div class="nav-right">
+        <div class="lang-toggle">
+          <button data-lang="es" type="button">ES</button>
+          <button data-lang="en" type="button">EN</button>
+        </div>
+        <button class="nav-toggle" type="button" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container">
+      <span class="hero-eyebrow" data-i18n="hero_eyebrow">Hecho a mano, con amor</span>
+      <h1 data-i18n="hero_title">Sabores caseros que se sienten como en casa</h1>
+      <p data-i18n="hero_subtitle">Dulces, comida y pasteles preparados a mano, con ingredientes frescos y mucho cariño.</p>
+    </div>
+  </header>
+
+  <main class="categories">
+    <div class="container">
+      <div class="section-heading">
+        <h2 data-i18n="section_heading">Nuestras categorías</h2>
+        <p data-i18n="section_sub">Escoge una categoría para ver el menú</p>
+      </div>
+
+      <div class="card-grid">
+        <a href="candies.html" class="category-card">
+          <div class="card-icon">🍬</div>
+          <h3 data-i18n="card_candies_title">Dulces</h3>
+          <p data-i18n="card_candies_desc">Dulces tradicionales hechos a mano, perfectos para endulzar el día.</p>
+          <span class="card-cta"><span data-i18n="card_cta">Ver menú</span> <span class="arrow">→</span></span>
+        </a>
+
+        <a href="comida.html" class="category-card">
+          <div class="card-icon">🍗</div>
+          <h3 data-i18n="card_comida_title">Comida</h3>
+          <p data-i18n="card_comida_desc">Platos caseros preparados con las recetas de siempre.</p>
+          <span class="card-cta"><span data-i18n="card_cta">Ver menú</span> <span class="arrow">→</span></span>
+        </a>
+
+        <a href="pasteles.html" class="category-card">
+          <div class="card-icon">🎁</div>
+          <h3 data-i18n="card_pasteles_title">Pasteles</h3>
+          <p data-i18n="card_pasteles_desc">Pasteles envueltos a mano, la tradición navideña todo el año.</p>
+          <span class="card-cta"><span data-i18n="card_cta">Ver menú</span> <span class="arrow">→</span></span>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-brand" data-business-name>Delicias de Denise</div>
+      <p data-i18n="footer_tagline">Comida casera hecha con amor.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
