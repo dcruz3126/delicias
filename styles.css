@@ -373,6 +373,25 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   justify-content: center;
   font-size: 2.4rem;
   border-bottom: var(--border-w) solid var(--color-purple-deep);
+  overflow: hidden;
+}
+
+.item-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.grid-msg {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 50px 0;
+  color: var(--color-text-soft);
+  font-weight: 600;
+}
+
+.grid-msg-error {
+  color: var(--color-pink);
 }
 
 .item-body {
