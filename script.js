@@ -43,6 +43,7 @@ const TRANSLATIONS = {
     page_comida_sub: "Platos preparados frescos, al estilo de casa.",
     page_pasteles_title: "Pasteles",
     page_pasteles_sub: "Pasteles envueltos a mano, listos para calentar y disfrutar.",
+    out_of_stock: "Agotado",  
     order_btn: "Ordenar",
     footer_tagline: "Comida casera hecha con amor.",
     footer_contact: "Ordenar por WhatsApp",
@@ -73,6 +74,7 @@ const TRANSLATIONS = {
     page_pasteles_title: "Pasteles",
     page_pasteles_sub: "Hand-wrapped pasteles, ready to heat and enjoy.",
     order_btn: "Order",
+    out_of_stock: "Out of stock",
     footer_tagline: "Homemade food made with love.",
     footer_contact: "Order via WhatsApp",
     whatsapp_msg: (item) => `Hi! I'd like to order: ${item}. Is it available?`,
@@ -191,18 +193,28 @@ async function renderItems(category, lang) {
       const photo = item.image
         ? `<img src="${item.image}" alt="${name}" loading="lazy">`
         : `<span class="item-photo-fallback">🍽️</span>`;
+            const outOfStock = item.outOfStock;
+         
+       const orderBtn = outOfStock
+        ? `<span class="order-btn order-btn-disabled">${t.out_of_stock}</span>`
+        : `<a class="order-btn" href="${link}" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.01 2C6.48 2 2 6.48 2 12c0 1.87.5 3.62 1.38 5.12L2 22l4.99-1.31A9.96 9.96 0 0 0 12.01 22C17.53 22 22 17.52 22 12S17.53 2 12.01 2Zm5.71 14.2c-.24.68-1.4 1.3-1.93 1.35-.5.06-1.02.29-3.4-.7-2.87-1.2-4.7-4.1-4.85-4.3-.14-.2-1.16-1.55-1.16-2.95 0-1.4.73-2.08.99-2.37.26-.28.57-.35.76-.35h.55c.18 0 .42-.03.65.5.24.55.8 1.9.87 2.03.07.14.11.3.02.48-.08.18-.13.3-.26.46-.13.16-.27.35-.39.47-.13.13-.27.27-.11.53.16.27.7 1.16 1.51 1.88 1.04.93 1.92 1.22 2.19 1.36.27.13.42.11.58-.07.16-.18.68-.79.86-1.06.18-.27.36-.22.6-.13.24.09 1.55.73 1.82.87.27.13.44.2.5.31.07.12.07.66-.17 1.34Z"/></svg>
+            <span>${t.order_btn}</span>
+          </a>`;
+
       return `
-        <article class="item-card">
-          <div class="item-photo">${photo}</div>
+        <article class="item-card${outOfStock ? " item-card-out" : ""}">
+          <div class="item-photo">
+            ${photo}
+            ${outOfStock ? `<span class="stock-badge">${t.out_of_stock}</span>` : ""}
+          </div>
           <div class="item-body">
             <h3>${name}</h3>
             <p>${desc}</p>
+            ${item.info ? `<p class="item-info">${item.info}</p>` : ""}
             <div class="item-footer">
               <span class="item-price">${item.price}</span>
-              <a class="order-btn" href="${link}" target="_blank" rel="noopener">
-                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.01 2C6.48 2 2 6.48 2 12c0 1.87.5 3.62 1.38 5.12L2 22l4.99-1.31A9.96 9.96 0 0 0 12.01 22C17.53 22 22 17.52 22 12S17.53 2 12.01 2Zm5.71 14.2c-.24.68-1.4 1.3-1.93 1.35-.5.06-1.02.29-3.4-.7-2.87-1.2-4.7-4.1-4.85-4.3-.14-.2-1.16-1.55-1.16-2.95 0-1.4.73-2.08.99-2.37.26-.28.57-.35.76-.35h.55c.18 0 .42-.03.65.5.24.55.8 1.9.87 2.03.07.14.11.3.02.48-.08.18-.13.3-.26.46-.13.16-.27.35-.39.47-.13.13-.27.27-.11.53.16.27.7 1.16 1.51 1.88 1.04.93 1.92 1.22 2.19 1.36.27.13.42.11.58-.07.16-.18.68-.79.86-1.06.18-.27.36-.22.6-.13.24.09 1.55.73 1.82.87.27.13.44.2.5.31.07.12.07.66-.17 1.34Z"/></svg>
-              <span>${t.order_btn}</span>
-            </a>
+              ${orderBtn}
             </div>
           </div>
         </article>`;
