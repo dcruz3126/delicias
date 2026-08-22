@@ -1,15 +1,11 @@
 /* ============================================
    Delicias de Denise — Script
-   Edit BUSINESS_NAME and WHATSAPP_NUMBER below
-   to update them everywhere on the site.
    ============================================ */
 
 // ---- EASY-TO-EDIT SETTINGS ----
 const BUSINESS_NAME = "Delicias de Denise";
 // WhatsApp number in international format, digits only (no +, spaces or dashes)
-// Example for Puerto Rico: "17871234567"
-const WHATSAPP_NUMBER = "17871234567";
-// Paste the URL you get after deploying the Apps Script as a Web App
+const WHATSAPP_NUMBER = "18132608333";
 // (Deploy > New deployment > Web app > Execute as: Me, Who has access: Anyone)
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxjd3pFQTXz1xdp89k4Q8YucODY965YWvn94ghH-GW6IiLsWiS94UCQ_hDV9DSulM/exec";
 // How long to keep items cached in this browser tab before re-fetching, in ms
@@ -25,9 +21,9 @@ const TRANSLATIONS = {
     nav_comida: "Comida",
     nav_pasteles: "Pasteles",
     hero_eyebrow: "Hecho a mano, con amor",
-    hero_title: "Sabores caseros que se sienten como en casa",
-    hero_subtitle: "Dulces, comida y pasteles preparados a mano, con ingredientes frescos y mucho cariño.",
-    section_heading: "Nuestras categorías",
+    hero_title: "Sabores Caseros",
+    hero_subtitle: "Dulces, comida y pasteles preparados a mano, con ingredientes frescos y mucho amor.",
+    section_heading: "Categorías",
     section_sub: "Escoge una categoría para ver el menú",
     card_candies_title: "Dulces",
     card_candies_desc: "Dulces tradicionales hechos a mano, perfectos para endulzar el día.",
@@ -40,7 +36,7 @@ const TRANSLATIONS = {
     page_candies_title: "Dulces",
     page_candies_sub: "Dulces caseros hechos con recetas de familia.",
     page_comida_title: "Comida",
-    page_comida_sub: "Platos preparados frescos, al estilo de casa.",
+    page_comida_sub: "Platos preparados frescos, al estilo boricua.",
     page_pasteles_title: "Pasteles",
     page_pasteles_sub: "Pasteles envueltos a mano, listos para calentar y disfrutar.",
     out_of_stock: "Agotado",  
@@ -56,8 +52,8 @@ const TRANSLATIONS = {
     nav_pasteles: "Pasteles",
     hero_eyebrow: "Handmade, with love",
     hero_title: "Homemade flavors that feel like home",
-    hero_subtitle: "Candies, food, and pasteles made by hand, with fresh ingredients and a lot of care.",
-    section_heading: "Our categories",
+    hero_subtitle: "Candies, food, and pasteles made by hand, with fresh ingredients and a lot of love.",
+    section_heading: "Categories",
     section_sub: "Pick a category to see the menu",
     card_candies_title: "Candies",
     card_candies_desc: "Traditional handmade candies, perfect for a sweet moment.",
