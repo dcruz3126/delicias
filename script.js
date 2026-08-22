@@ -211,7 +211,7 @@ async function renderItems(category, lang) {
           <div class="item-body">
             <h3>${name}</h3>
             <p>${desc}</p>
-            ${item.info ? `<p class="item-info">${item.info}</p>` : ""}
+            ${item.info[lang] ? `<p class="item-info">${item.info[lang]}</p>` : ""}
             <div class="item-footer">
               <span class="item-price">${item.price}</span>
               ${orderBtn}
