@@ -490,6 +490,36 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 .footer-whatsapp:hover { background: rgba(255,255,255,0.24); }
 
+.item-photo { position: relative; }
+
+.stock-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--color-purple-deep);
+  color: var(--color-white);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.item-card-out .item-photo img { opacity: 0.5; }
+
+.item-info {
+  font-size: 0.8rem;
+  color: var(--color-pink);
+  font-weight: 600;
+  margin-top: -8px;
+  margin-bottom: 12px;
+}
+
+.order-btn-disabled {
+  background: var(--color-text-soft);
+  cursor: default;
+  pointer-events: none;
+}
+
 /* ============================================
    Responsive
    ============================================ */
