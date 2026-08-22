@@ -6,8 +6,11 @@
 // ---- EASY-TO-EDIT SETTINGS ----
 const BUSINESS_NAME = "Delicias de Denise";
 // WhatsApp number in international format, digits only (no +, spaces or dashes)
-// Example for Puerto Rico: "17871234567"
+// Example for Puerto Rico: "17871234567" — also used for the SMS/text option
 const WHATSAPP_NUMBER = "18132608333";
+// Your Facebook Page username, the part after facebook.com/ or m.me/
+// Example: if your page is facebook.com/DeliciasDeDenise, use "DeliciasDeDenise"
+const FACEBOOK_USERNAME = "PASTE_YOUR_FACEBOOK_USERNAME_HERE";
 // Paste the URL you get after deploying the Apps Script as a Web App
 // (Deploy > New deployment > Web app > Execute as: Me, Who has access: Anyone)
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxjd3pFQTXz1xdp89k4Q8YucODY965YWvn94ghH-GW6IiLsWiS94UCQ_hDV9DSulM/exec";
@@ -55,6 +58,8 @@ const TRANSLATIONS = {
     cart_remove: "Eliminar",
     whatsapp_cart_header: "¡Hola! Quiero ordenar:",
     whatsapp_cart_total_label: "Total:",
+    cart_checkout_sms: "Enviar por mensaje de texto",
+    cart_checkout_messenger: "Enviar por Messenger",
   },
   en: {
     nav_home: "Home",
@@ -91,10 +96,16 @@ const TRANSLATIONS = {
     cart_remove: "Remove",
     whatsapp_cart_header: "Hi! I'd like to order:",
     whatsapp_cart_total_label: "Total:",
+    cart_checkout_sms: "Send as text message",
+    cart_checkout_messenger: "Send via Messenger",
   },
 };
 
 const WHATSAPP_ICON_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.01 2C6.48 2 2 6.48 2 12c0 1.87.5 3.62 1.38 5.12L2 22l4.99-1.31A9.96 9.96 0 0 0 12.01 22C17.53 22 22 17.52 22 12S17.53 2 12.01 2Zm5.71 14.2c-.24.68-1.4 1.3-1.93 1.35-.5.06-1.02.29-3.4-.7-2.87-1.2-4.7-4.1-4.85-4.3-.14-.2-1.16-1.55-1.16-2.95 0-1.4.73-2.08.99-2.37.26-.28.57-.35.76-.35h.55c.18 0 .42-.03.65.5.24.55.8 1.9.87 2.03.07.14.11.3.02.48-.08.18-.13.3-.26.46-.13.16-.27.35-.39.47-.13.13-.27.27-.11.53.16.27.7 1.16 1.51 1.88 1.04.93 1.92 1.22 2.19 1.36.27.13.42.11.58-.07.16-.18.68-.79.86-1.06.18-.27.36-.22.6-.13.24.09 1.55.73 1.82.87.27.13.44.2.5.31.07.12.07.66-.17 1.34Z"/></svg>`;
+
+const SMS_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
+
+const MESSENGER_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg>`;
 
 // ============================================
 // Menu items — fetched from the Google Sheet via Apps Script.
@@ -230,19 +241,35 @@ function cartTotal(cart = getCart()) {
   return cart.reduce((sum, c) => sum + c.qty * c.price, 0);
 }
 
-function buildCartWhatsAppLink(cart, lang) {
+function buildCartMessage(cart, lang) {
   const t = TRANSLATIONS[lang];
-  if (!cart.length) return `https://wa.me/${WHATSAPP_NUMBER}`;
-
   const lines = cart.map((entry) => {
     const name = entry.name[lang];
     const subtotal = formatMoney(entry.price * entry.qty);
     return `${entry.qty}x ${name} - ${subtotal}`;
   });
-
   const total = formatMoney(cartTotal(cart));
-  const message = `${t.whatsapp_cart_header}\n\n${lines.join("\n")}\n\n${t.whatsapp_cart_total_label} ${total}`;
+  return `${t.whatsapp_cart_header}\n\n${lines.join("\n")}\n\n${t.whatsapp_cart_total_label} ${total}`;
+}
+
+function buildCartWhatsAppLink(cart, lang) {
+  if (!cart.length) return `https://wa.me/${WHATSAPP_NUMBER}`;
+  const message = buildCartMessage(cart, lang);
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+}
+
+function buildCartSmsLink(cart, lang) {
+  if (!cart.length) return `sms:+${WHATSAPP_NUMBER}`;
+  const message = buildCartMessage(cart, lang);
+  // Works on both iOS and Android; some older iOS versions expect
+  // "&body=" instead of "?body=", most modern devices accept either.
+  return `sms:+${WHATSAPP_NUMBER}?body=${encodeURIComponent(message)}`;
+}
+
+function buildCartMessengerLink(cart, lang) {
+  if (!cart.length) return `https://m.me/${FACEBOOK_USERNAME}`;
+  const message = buildCartMessage(cart, lang);
+  return `https://m.me/${FACEBOOK_USERNAME}?text=${encodeURIComponent(message)}`;
 }
 
 function updateCartBadge() {
@@ -305,6 +332,14 @@ function initCartUI() {
           ${WHATSAPP_ICON_SVG}
           <span data-i18n="cart_checkout">Ordenar por WhatsApp</span>
         </a>
+        <a class="cart-checkout-btn cart-checkout-btn-secondary" href="#">
+          ${SMS_ICON_SVG}
+          <span data-i18n="cart_checkout_sms">Enviar por mensaje de texto</span>
+        </a>
+        <a class="cart-checkout-btn cart-checkout-btn-secondary" href="#" target="_blank" rel="noopener">
+          ${MESSENGER_ICON_SVG}
+          <span data-i18n="cart_checkout_messenger">Enviar por Messenger</span>
+        </a>
         <button type="button" class="cart-clear-btn" data-i18n="cart_clear">Vaciar carrito</button>
       </div>
     </div>
@@ -366,7 +401,8 @@ function renderCartPanel(lang) {
   const cart = getCart();
   const itemsEl = overlay.querySelector(".cart-items");
   const totalEl = overlay.querySelector(".cart-total-value");
-  const checkoutBtn = overlay.querySelector(".cart-checkout-btn");
+  const checkoutBtns = overlay.querySelectorAll(".cart-checkout-btn");
+  const [whatsappBtn, smsBtn, messengerBtn] = checkoutBtns;
 
   if (!cart.length) {
     itemsEl.innerHTML = `<p class="cart-empty">${t.cart_empty}</p>`;
@@ -394,8 +430,11 @@ function renderCartPanel(lang) {
 
   const total = cartTotal(cart);
   totalEl.textContent = formatMoney(total);
-  checkoutBtn.href = buildCartWhatsAppLink(cart, lang);
-  checkoutBtn.classList.toggle("disabled", cart.length === 0);
+
+  whatsappBtn.href = buildCartWhatsAppLink(cart, lang);
+  smsBtn.href = buildCartSmsLink(cart, lang);
+  messengerBtn.href = buildCartMessengerLink(cart, lang);
+  checkoutBtns.forEach((btn) => btn.classList.toggle("disabled", cart.length === 0));
 
   overlay.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.getAttribute("data-i18n");
