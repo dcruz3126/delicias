@@ -711,6 +711,18 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   opacity: 0.5;
 }
 
+.cart-checkout-btn-secondary {
+  background: var(--color-white);
+  color: var(--color-purple-deep);
+  border: 2px solid var(--color-purple-deep);
+  padding: 11px 20px;
+}
+
+.cart-checkout-btn-secondary:hover {
+  background: var(--color-pink-light);
+  color: var(--color-purple-deep);
+}
+
 .cart-clear-btn {
   text-align: center;
   font-size: 0.85rem;
