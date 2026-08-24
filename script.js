@@ -58,8 +58,8 @@ const TRANSLATIONS = {
     cart_remove: "Eliminar",
     whatsapp_cart_header: "¡Hola! Quiero ordenar:",
     whatsapp_cart_total_label: "Total:",
-    cart_checkout_sms: "Enviar por mensaje de texto",
-    cart_checkout_messenger: "Enviar por Messenger",
+    cart_checkout_sms: "Ordenar por mensaje de texto",
+    cart_checkout_messenger: "Ordenar por Messenger",
   },
   en: {
     nav_home: "Home",
@@ -96,8 +96,8 @@ const TRANSLATIONS = {
     cart_remove: "Remove",
     whatsapp_cart_header: "Hi! I'd like to order:",
     whatsapp_cart_total_label: "Total:",
-    cart_checkout_sms: "Send as text message",
-    cart_checkout_messenger: "Send via Messenger",
+    cart_checkout_sms: "Order via text message",
+    cart_checkout_messenger: "Order via Messenger",
   },
 };
 
