@@ -46,7 +46,7 @@ const TRANSLATIONS = {
     page_comida_title: "Comida",
     page_comida_sub: "Platos preparados frescos, al estilo de casa.",
     page_pasteles_title: "Pasteles",
-    page_pasteles_sub: "Pasteles envueltos a mano, listos para calentar y disfrutar.",
+    page_pasteles_sub: "Pasteles envueltos a mano, grandes y con carne de punta a punta.",
     footer_tagline: "Comida casera hecha con amor.",
     footer_contact: "Ordenar por WhatsApp",
     out_of_stock: "Agotado",
