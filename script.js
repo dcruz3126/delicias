@@ -16,6 +16,10 @@ const FACEBOOK_USERNAME = "PASTE_YOUR_FACEBOOK_USERNAME_HERE";
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxjd3pFQTXz1xdp89k4Q8YucODY965YWvn94ghH-GW6IiLsWiS94UCQ_hDV9DSulM/exec";
 // How long to keep items cached in this browser tab before re-fetching, in ms
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+// Deposit rules: required if the order total OR item count crosses either value
+const DEPOSIT_THRESHOLD_AMOUNT = 60;   // order total in dollars
+const DEPOSIT_THRESHOLD_ITEMS = 12;    // total item count
+const DEPOSIT_PERCENT = 0.25;          // 25% of the order total
 // localStorage key the cart is saved under
 const CART_KEY = "dd_cart";
 
@@ -46,7 +50,7 @@ const TRANSLATIONS = {
     page_comida_title: "Comida",
     page_comida_sub: "Platos preparados frescos, al estilo de casa.",
     page_pasteles_title: "Pasteles",
-    page_pasteles_sub: "Pasteles envueltos a mano, grandes y con carne de punta a punta.",
+    page_pasteles_sub: "Pasteles envueltos a mano, listos para calentar y disfrutar.",
     footer_tagline: "Comida casera hecha con amor.",
     footer_contact: "Ordenar por WhatsApp",
     out_of_stock: "Agotado",
@@ -58,8 +62,11 @@ const TRANSLATIONS = {
     cart_remove: "Eliminar",
     whatsapp_cart_header: "¡Hola! Quiero ordenar:",
     whatsapp_cart_total_label: "Total:",
-    cart_checkout_sms: "Ordenar por mensaje de texto",
-    cart_checkout_messenger: "Ordenar por Messenger",
+    cart_checkout_sms: "Enviar por mensaje de texto",
+    cart_checkout_messenger: "Enviar por Messenger",
+    deposit_notice: (amount) => `Este pedido requiere un depósito de ${amount} para confirmarse.`,
+    deposit_instructions: "Efectivo por ahora. ATH Móvil próximamente.",
+    deposit_label: "Depósito requerido:",
   },
   en: {
     nav_home: "Home",
@@ -96,8 +103,11 @@ const TRANSLATIONS = {
     cart_remove: "Remove",
     whatsapp_cart_header: "Hi! I'd like to order:",
     whatsapp_cart_total_label: "Total:",
-    cart_checkout_sms: "Order via text message",
-    cart_checkout_messenger: "Order via Messenger",
+    cart_checkout_sms: "Send as text message",
+    cart_checkout_messenger: "Send via Messenger",
+    deposit_notice: (amount) => `This order requires a ${amount} deposit to confirm.`,
+    deposit_instructions: "Cash for now. ATH Móvil coming soon.",
+    deposit_label: "Deposit required:",
   },
 };
 
@@ -241,6 +251,17 @@ function cartTotal(cart = getCart()) {
   return cart.reduce((sum, c) => sum + c.qty * c.price, 0);
 }
 
+function depositRequired(cart) {
+  return (
+    cartTotal(cart) > DEPOSIT_THRESHOLD_AMOUNT ||
+    cartCount(cart) >= DEPOSIT_THRESHOLD_ITEMS
+  );
+}
+
+function depositAmount(cart) {
+  return cartTotal(cart) * DEPOSIT_PERCENT;
+}
+
 function buildCartMessage(cart, lang) {
   const t = TRANSLATIONS[lang];
   const lines = cart.map((entry) => {
@@ -249,7 +270,14 @@ function buildCartMessage(cart, lang) {
     return `${entry.qty}x ${name} - ${subtotal}`;
   });
   const total = formatMoney(cartTotal(cart));
-  return `${t.whatsapp_cart_header}\n\n${lines.join("\n")}\n\n${t.whatsapp_cart_total_label} ${total}`;
+  let message = `${t.whatsapp_cart_header}\n\n${lines.join("\n")}\n\n${t.whatsapp_cart_total_label} ${total}`;
+
+  if (depositRequired(cart)) {
+    const deposit = formatMoney(depositAmount(cart));
+    message += `\n\n${t.deposit_label} ${deposit}\n${t.deposit_instructions}`;
+  }
+
+  return message;
 }
 
 function buildCartWhatsAppLink(cart, lang) {
@@ -328,6 +356,7 @@ function initCartUI() {
           <span data-i18n="cart_total">Total</span>
           <span class="cart-total-value">$0</span>
         </div>
+        <div class="cart-deposit-notice"></div>
         <a class="cart-checkout-btn" href="#" target="_blank" rel="noopener">
           ${WHATSAPP_ICON_SVG}
           <span data-i18n="cart_checkout">Ordenar por WhatsApp</span>
@@ -430,6 +459,15 @@ function renderCartPanel(lang) {
 
   const total = cartTotal(cart);
   totalEl.textContent = formatMoney(total);
+
+  const depositEl = overlay.querySelector(".cart-deposit-notice");
+  if (cart.length && depositRequired(cart)) {
+    const deposit = formatMoney(depositAmount(cart));
+    depositEl.innerHTML = `<strong>${t.deposit_notice(deposit)}</strong><br>${t.deposit_instructions}`;
+    depositEl.style.display = "block";
+  } else {
+    depositEl.style.display = "none";
+  }
 
   whatsappBtn.href = buildCartWhatsAppLink(cart, lang);
   smsBtn.href = buildCartSmsLink(cart, lang);
