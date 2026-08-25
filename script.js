@@ -1,4 +1,3 @@
-
 /* ============================================
    Delicias de Denise — Script
    ============================================ */
@@ -22,6 +21,8 @@ const DEPOSIT_THRESHOLD_ITEMS = 12;    // total item count
 const DEPOSIT_PERCENT = 0.25;          // 25% of the order total
 // localStorage key the cart is saved under
 const CART_KEY = "dd_cart";
+// localStorage key the customer's name/phone is remembered under
+const CUSTOMER_KEY = "dd_customer";
 
 // ============================================
 // Translations
@@ -67,6 +68,11 @@ const TRANSLATIONS = {
     deposit_notice: (amount) => `Este pedido requiere un depósito de ${amount} para confirmarse.`,
     deposit_instructions: "Solo Efectivo por ahora. ATH Móvil llega pronto.",
     deposit_label: "Depósito requerido:",
+    form_name_placeholder: "Tu nombre",
+    form_phone_placeholder: "Tu número de teléfono",
+    form_error: "Por favor completa tu nombre y teléfono.",
+    sending_label: "Enviando...",
+    order_number_line: (num) => `Pedido #${num}`,
   },
   en: {
     nav_home: "Home",
@@ -108,6 +114,11 @@ const TRANSLATIONS = {
     deposit_notice: (amount) => `This order requires a ${amount} deposit to confirm.`,
     deposit_instructions: "Cash only, for now. ATH Móvil coming soon.",
     deposit_label: "Deposit required:",
+    form_name_placeholder: "Your name",
+    form_phone_placeholder: "Your phone number",
+    form_error: "Please fill in your name and phone number.",
+    sending_label: "Sending...",
+    order_number_line: (num) => `Order #${num}`,
   },
 };
 
@@ -172,6 +183,11 @@ function applyLang(lang) {
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.getAttribute("data-i18n");
     if (t[key]) el.textContent = t[key];
+  });
+
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    if (t[key]) el.placeholder = t[key];
   });
 
   document.querySelectorAll(".lang-toggle button").forEach((btn) => {
@@ -262,7 +278,26 @@ function depositAmount(cart) {
   return cartTotal(cart) * DEPOSIT_PERCENT;
 }
 
-function buildCartMessage(cart, lang) {
+// ============================================
+// Customer info (name + phone), remembered locally
+// so returning customers don't retype every time
+// ============================================
+function getCustomer() {
+  try {
+    return JSON.parse(localStorage.getItem(CUSTOMER_KEY)) || { name: "", phone: "" };
+  } catch (e) {
+    return { name: "", phone: "" };
+  }
+}
+
+function saveCustomer(name, phone) {
+  localStorage.setItem(CUSTOMER_KEY, JSON.stringify({ name, phone }));
+}
+
+// orderNumber is optional: when present (normal path) it's included as the
+// first line of the message. When the sheet write fails, the message still
+// sends but without the order number.
+function buildCartMessage(cart, lang, orderNumber) {
   const t = TRANSLATIONS[lang];
   const lines = cart.map((entry) => {
     const name = entry.name[lang];
@@ -270,7 +305,12 @@ function buildCartMessage(cart, lang) {
     return `${entry.qty}x ${name} - ${subtotal}`;
   });
   const total = formatMoney(cartTotal(cart));
-  let message = `${t.whatsapp_cart_header}\n\n${lines.join("\n")}\n\n${t.whatsapp_cart_total_label} ${total}`;
+
+  let message = `${t.whatsapp_cart_header}\n\n`;
+  if (orderNumber) {
+    message += `${t.order_number_line(orderNumber)}\n\n`;
+  }
+  message += `${lines.join("\n")}\n\n${t.whatsapp_cart_total_label} ${total}`;
 
   if (depositRequired(cart)) {
     const deposit = formatMoney(depositAmount(cart));
@@ -280,23 +320,23 @@ function buildCartMessage(cart, lang) {
   return message;
 }
 
-function buildCartWhatsAppLink(cart, lang) {
+function buildCartWhatsAppLink(cart, lang, orderNumber) {
   if (!cart.length) return `https://wa.me/${WHATSAPP_NUMBER}`;
-  const message = buildCartMessage(cart, lang);
+  const message = buildCartMessage(cart, lang, orderNumber);
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
-function buildCartSmsLink(cart, lang) {
+function buildCartSmsLink(cart, lang, orderNumber) {
   if (!cart.length) return `sms:+${WHATSAPP_NUMBER}`;
-  const message = buildCartMessage(cart, lang);
+  const message = buildCartMessage(cart, lang, orderNumber);
   // Works on both iOS and Android; some older iOS versions expect
   // "&body=" instead of "?body=", most modern devices accept either.
   return `sms:+${WHATSAPP_NUMBER}?body=${encodeURIComponent(message)}`;
 }
 
-function buildCartMessengerLink(cart, lang) {
+function buildCartMessengerLink(cart, lang, orderNumber) {
   if (!cart.length) return `https://m.me/${FACEBOOK_USERNAME}`;
-  const message = buildCartMessage(cart, lang);
+  const message = buildCartMessage(cart, lang, orderNumber);
   return `https://m.me/${FACEBOOK_USERNAME}?text=${encodeURIComponent(message)}`;
 }
 
@@ -318,6 +358,103 @@ function syncGridQuantities() {
     const valueEl = stepper.querySelector(".qty-value");
     if (valueEl) valueEl.textContent = getQtyForId(id);
   });
+}
+
+// ============================================
+// Order submission — sends the cart to the Google Sheet first,
+// gets back an order number, then the caller opens WhatsApp/SMS/
+// Messenger with that number included in the message.
+// ============================================
+async function submitOrder(cart, lang, name, phone) {
+  const payload = {
+    name,
+    phone,
+    lang,
+    items: cart.map((entry) => ({
+      name: entry.name[lang],
+      qty: entry.qty,
+      price: entry.price,
+    })),
+    total: cartTotal(cart),
+    depositRequired: depositRequired(cart),
+    depositAmount: depositRequired(cart) ? depositAmount(cart) : 0,
+  };
+
+  // Content-Type text/plain avoids a CORS preflight against Apps Script
+  // (which doesn't handle OPTIONS requests). The Apps Script side parses
+  // this as JSON from e.postData.contents regardless of the header.
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) throw new Error("Network error");
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "Unknown error");
+  return data.orderNumber;
+}
+
+// Runs the full checkout flow for one send method: validate -> submit to
+// sheet -> open WhatsApp/SMS/Messenger with the order number -> clear cart.
+// If the sheet write fails, the message still sends, just without a number.
+async function handleCheckout(method, lang) {
+  const overlay = document.querySelector(".cart-overlay");
+  if (!overlay) return;
+  const cart = getCart();
+  if (!cart.length) return;
+
+  const t = TRANSLATIONS[lang];
+  const nameInput = overlay.querySelector(".cart-name-input");
+  const phoneInput = overlay.querySelector(".cart-phone-input");
+  const errorEl = overlay.querySelector(".cart-form-error");
+  const name = nameInput.value.trim();
+  const phone = phoneInput.value.trim();
+
+  if (!name || !phone) {
+    errorEl.textContent = t.form_error;
+    errorEl.style.display = "block";
+    (name ? phoneInput : nameInput).focus();
+    return;
+  }
+  errorEl.style.display = "none";
+
+  const btns = overlay.querySelectorAll(".cart-checkout-btn");
+  const activeBtn = overlay.querySelector(`.cart-checkout-btn[data-method="${method}"]`);
+  const activeLabel = activeBtn ? activeBtn.querySelector("span") : null;
+  const originalLabel = activeLabel ? activeLabel.textContent : "";
+
+  btns.forEach((b) => b.classList.add("disabled"));
+  if (activeLabel) activeLabel.textContent = t.sending_label;
+
+  let orderNumber = null;
+  try {
+    orderNumber = await submitOrder(cart, lang, name, phone);
+  } catch (err) {
+    // Sheet write failed — still send the message, just without a number.
+    orderNumber = null;
+  }
+
+  saveCustomer(name, phone);
+
+  let url;
+  if (method === "sms") url = buildCartSmsLink(cart, lang, orderNumber);
+  else if (method === "messenger") url = buildCartMessengerLink(cart, lang, orderNumber);
+  else url = buildCartWhatsAppLink(cart, lang, orderNumber);
+
+  if (method === "sms") {
+    window.location.href = url;
+  } else {
+    window.open(url, "_blank", "noopener");
+  }
+
+  saveCart([]);
+  renderCartPanel(lang);
+  updateCartBadge();
+  syncGridQuantities();
+
+  btns.forEach((b) => b.classList.remove("disabled"));
+  if (activeLabel) activeLabel.textContent = originalLabel;
 }
 
 // ============================================
@@ -357,15 +494,20 @@ function initCartUI() {
           <span class="cart-total-value">$0</span>
         </div>
         <div class="cart-deposit-notice"></div>
-        <a class="cart-checkout-btn" href="#" target="_blank" rel="noopener">
+        <div class="cart-customer-form">
+          <input type="text" class="cart-input cart-name-input" data-i18n-placeholder="form_name_placeholder" placeholder="Tu nombre" autocomplete="name">
+          <input type="tel" class="cart-input cart-phone-input" data-i18n-placeholder="form_phone_placeholder" placeholder="Tu número de teléfono" autocomplete="tel">
+          <p class="cart-form-error"></p>
+        </div>
+        <a class="cart-checkout-btn" href="#" data-method="whatsapp">
           ${WHATSAPP_ICON_SVG}
           <span data-i18n="cart_checkout">Ordenar por WhatsApp</span>
         </a>
-        <a class="cart-checkout-btn cart-checkout-btn-secondary" href="#">
+        <a class="cart-checkout-btn cart-checkout-btn-secondary" href="#" data-method="sms">
           ${SMS_ICON_SVG}
           <span data-i18n="cart_checkout_sms">Enviar por mensaje de texto</span>
         </a>
-        <a class="cart-checkout-btn cart-checkout-btn-secondary" href="#" target="_blank" rel="noopener">
+        <a class="cart-checkout-btn cart-checkout-btn-secondary" href="#" data-method="messenger">
           ${MESSENGER_ICON_SVG}
           <span data-i18n="cart_checkout_messenger">Enviar por Messenger</span>
         </a>
@@ -405,12 +547,35 @@ function initCartUI() {
     syncGridQuantities();
   });
 
+  overlay.querySelectorAll(".cart-checkout-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (btn.classList.contains("disabled")) return;
+      handleCheckout(btn.dataset.method, getLang());
+    });
+  });
+
+  // Hide the validation error as soon as the customer starts fixing it
+  [".cart-name-input", ".cart-phone-input"].forEach((sel) => {
+    overlay.querySelector(sel).addEventListener("input", () => {
+      overlay.querySelector(".cart-form-error").style.display = "none";
+    });
+  });
+
   updateCartBadge();
 }
 
 function openCart() {
   const overlay = document.querySelector(".cart-overlay");
   if (!overlay) return;
+
+  // Prefill remembered name/phone, without overwriting anything already typed
+  const nameInput = overlay.querySelector(".cart-name-input");
+  const phoneInput = overlay.querySelector(".cart-phone-input");
+  const customer = getCustomer();
+  if (nameInput && !nameInput.value) nameInput.value = customer.name;
+  if (phoneInput && !phoneInput.value) phoneInput.value = customer.phone;
+
   renderCartPanel(getLang());
   overlay.classList.add("open");
   document.body.classList.add("cart-lock-scroll");
@@ -431,7 +596,6 @@ function renderCartPanel(lang) {
   const itemsEl = overlay.querySelector(".cart-items");
   const totalEl = overlay.querySelector(".cart-total-value");
   const checkoutBtns = overlay.querySelectorAll(".cart-checkout-btn");
-  const [whatsappBtn, smsBtn, messengerBtn] = checkoutBtns;
 
   if (!cart.length) {
     itemsEl.innerHTML = `<p class="cart-empty">${t.cart_empty}</p>`;
@@ -469,14 +633,15 @@ function renderCartPanel(lang) {
     depositEl.style.display = "none";
   }
 
-  whatsappBtn.href = buildCartWhatsAppLink(cart, lang);
-  smsBtn.href = buildCartSmsLink(cart, lang);
-  messengerBtn.href = buildCartMessengerLink(cart, lang);
   checkoutBtns.forEach((btn) => btn.classList.toggle("disabled", cart.length === 0));
 
   overlay.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.getAttribute("data-i18n");
     if (t[key]) el.textContent = t[key];
+  });
+  overlay.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    if (t[key]) el.placeholder = t[key];
   });
 }
 
