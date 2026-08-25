@@ -700,6 +700,41 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   line-height: 1.4;
 }
 
+/* ---- Name + phone form, shown above the send buttons ---- */
+
+.cart-customer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cart-input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 2px solid var(--color-purple-deep);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  background: var(--color-white);
+}
+
+.cart-input:focus {
+  outline: none;
+  border-color: var(--color-pink);
+}
+
+.cart-input::placeholder {
+  color: var(--color-text-soft);
+}
+
+.cart-form-error {
+  display: none;
+  color: var(--color-pink);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
 .cart-checkout-btn {
   display: flex;
   align-items: center;
