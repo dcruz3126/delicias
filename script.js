@@ -15,7 +15,7 @@ const FACEBOOK_USERNAME = "PASTE_YOUR_FACEBOOK_USERNAME_HERE";
 // (Deploy > New deployment > Web app > Execute as: Me, Who has access: Anyone)
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxjd3pFQTXz1xdp89k4Q8YucODY965YWvn94ghH-GW6IiLsWiS94UCQ_hDV9DSulM/exec";
 // How long to keep items cached in this browser tab before re-fetching, in ms
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL_MS = 0 //5 * 60 * 1000; // 5 minutes
 // Deposit rules: required if the order total OR item count crosses either value
 const DEPOSIT_THRESHOLD_AMOUNT = 60;   // order total in dollars
 const DEPOSIT_THRESHOLD_ITEMS = 12;    // total item count
