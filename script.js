@@ -48,7 +48,7 @@ const TRANSLATIONS = {
     page_candies_title: "Dulces",
     page_candies_sub: "Dulces caseros hechos con recetas de familia.",
     page_comida_title: "Comida",
-    page_comida_sub: "Platos preparados frescos, al estilo de casa.",
+    page_comida_sub: "Platos preparados frescos, al estilo boricua.",
     page_pasteles_title: "Pasteles",
     page_pasteles_sub: "Pasteles envueltos a mano, grandesito y con carne de punta a punta.",
     footer_tagline: "Comida casera hecha con amor.",
