@@ -689,6 +689,17 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-weight: 700;
 }
 
+.cart-deposit-notice {
+  display: none;
+  background: var(--color-pink-light);
+  border: 2px solid var(--color-pink);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: var(--color-purple-deep);
+  line-height: 1.4;
+}
+
 .cart-checkout-btn {
   display: flex;
   align-items: center;
