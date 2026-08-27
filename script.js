@@ -249,7 +249,6 @@ function changeQty(item, delta) {
   const cart = getCart();
   const id = itemId(item);
   const existing = cart.find((c) => c.id === id);
-
   if (existing) {
     existing.qty += delta;
     if (existing.qty <= 0) cart.splice(cart.indexOf(existing), 1);
@@ -260,9 +259,9 @@ function changeQty(item, delta) {
       name: item.name,
       price: parsePrice(item.price),
       qty: delta,
+      packSize: Number(item.packSize) || 1,
     });
   }
-
   saveCart(cart);
   return cart;
 }
@@ -380,7 +379,7 @@ async function submitOrder(cart, lang, name, phone) {
     lang,
     items: cart.map((entry) => ({
       name: entry.name[lang],
-      qty: entry.qty,
+      qty: entry.qty * (entry.packSize || 1),
       price: entry.price,
     })),
     total: cartTotal(cart),
