@@ -824,6 +824,38 @@ body.cart-lock-scroll { overflow: hidden; }
 
 .footer-whatsapp:hover { background: rgba(255,255,255,0.24); }
 
+.pickup-banner {
+  background: var(--color-pink-light);
+  border-bottom: 2px solid var(--color-pink);
+  padding: 12px 0;
+  text-align: center;
+}
+
+.pickup-banner p {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-purple-deep);
+}
+
+.pickup-notice {
+  margin-top: 48px;
+  padding: 20px 24px;
+  background: var(--color-pink-light);
+  border: 2px solid var(--color-pink);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.pickup-notice p {
+  color: var(--color-purple-deep);
+  font-size: 0.9rem;
+}
+
+.pickup-notice p:first-child {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
 /* ============================================
    Responsive
    ============================================ */
