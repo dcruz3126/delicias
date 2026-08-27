@@ -73,6 +73,10 @@ const TRANSLATIONS = {
     form_error: "Por favor completa tu nombre y teléfono.",
     sending_label: "Enviando...",
     order_number_line: (num) => `Pedido #${num}`,
+    pickup_banner_title: "Recogido en tienda solamente",
+    pickup_banner_address: "Dirección: [pega tu dirección aquí]",
+    pickup_notice_title: "📍 Solo Pickup",
+    pickup_notice_address: "Dirección: [pega tu dirección aquí]",
   },
   en: {
     nav_home: "Home",
@@ -119,6 +123,10 @@ const TRANSLATIONS = {
     form_error: "Please fill in your name and phone number.",
     sending_label: "Sending...",
     order_number_line: (num) => `Order #${num}`,
+    pickup_banner_title: "Pickup only",
+    pickup_banner_address: "Address: [paste your address here]",
+    pickup_notice_title: "📍 Pickup Only",
+    pickup_notice_address: "Address: [paste your address here]",
   },
 };
 
