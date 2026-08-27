@@ -381,6 +381,7 @@ async function submitOrder(cart, lang, name, phone) {
       name: entry.name[lang],
       qty: entry.qty * (entry.packSize || 1),
       price: entry.price,
+      category: entry.category,
     })),
     total: cartTotal(cart),
     depositRequired: depositRequired(cart),
