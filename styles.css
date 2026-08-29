@@ -902,17 +902,22 @@ body.cart-lock-scroll { overflow: hidden; }
 }
 
 /* "Order now" button on page 1, styled like your primary checkout button */
+
 .cart-order-now-btn {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 8px;
-  background-color: var(--color-purple);
-  color: var(--color-pink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--color-purple-deep);
+  color: var(--color-white);
+  font-weight: 700;
+  padding: 13px 20px;
+  border-radius: 999px;
+  transition: background 0.15s ease;
 }
+
+.cart-order-now-btn:hover { background: var(--color-pink); }
+
 .cart-order-now-btn.disabled {
   opacity: 0.5;
   pointer-events: none;
