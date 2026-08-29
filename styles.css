@@ -856,6 +856,91 @@ body.cart-lock-scroll { overflow: hidden; }
   margin-bottom: 4px;
 }
 
+/* --- Two-page cart panel --- */
+.cart-page-2 {
+  display: none;
+}
+.cart-panel[data-page="2"] .cart-page-1 {
+  display: none;
+}
+.cart-panel[data-page="2"] .cart-page-2 {
+  display: block;
+}
+
+/* Back arrow, hidden on page 1 */
+.cart-back-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: inherit;
+}
+.cart-back-btn svg {
+  width: 22px;
+  height: 22px;
+}
+.cart-panel[data-page="2"] .cart-back-btn {
+  display: inline-flex;
+}
+
+/* Header now has back / title / close, so make it a 3-part flex row */
+.cart-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cart-panel-header .cart-title {
+  flex: 1;
+  text-align: center;
+}
+
+/* "Order now" button on page 1, styled like your primary checkout button */
+.cart-order-now-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+}
+.cart-order-now-btn.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Plain-text order summary on page 2 */
+.cart-summary-title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+.cart-summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 0.95rem;
+}
+.cart-summary-total {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  margin-top: 6px;
+  padding-top: 8px;
+  font-weight: 600;
+}
+
+/* Notes textarea needs its own sizing since .cart-input is probably
+   set up for single-line inputs */
+.cart-notes-input {
+  resize: vertical;
+  min-height: 48px;
+  font-family: inherit;
+}
+
+.cart-specific-date-input {
+  margin-top: -4px;
+}
+
 /* ============================================
    Responsive
    ============================================ */
@@ -889,3 +974,4 @@ body.cart-lock-scroll { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; scroll-behavior: auto !important; }
 }
+
