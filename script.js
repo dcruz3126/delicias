@@ -77,6 +77,24 @@ const TRANSLATIONS = {
     pickup_banner_address: "Dirección: [pega tu dirección aquí]",
     pickup_notice_title: "📍 Solo Pickup",
     pickup_notice_address: "Dirección: [pega tu dirección aquí]",
+
+    // Page 2 / order details
+    cart_order_now: "Ordenar ahora",
+    cart_back: "Atrás",
+    cart_summary_title: "Resumen del pedido",
+    form_timeframe_default: "¿Cuándo lo necesitas?",
+    timeframe_asap: "Esta Semana",
+    timeframe_two_weeks: "En las próximas 2 semanas",
+    timeframe_this_month: "Este mes",
+    timeframe_thanksgiving: "Para Thanksgiving",
+    timeframe_christmas: "Para Navidad",
+    timeframe_specific_date: "Fecha específica",
+    form_specific_date_label: "Selecciona la fecha",
+    form_notes_placeholder: "Notas (opcional)",
+    form_timeframe_error: "Por favor selecciona cuándo lo necesitas.",
+    form_specific_date_error: "Por favor selecciona una fecha.",
+    whatsapp_timeframe_label: "Cuándo:",
+    whatsapp_notes_label: "Notas:",
   },
   en: {
     nav_home: "Home",
@@ -127,14 +145,45 @@ const TRANSLATIONS = {
     pickup_banner_address: "Address: [paste your address here]",
     pickup_notice_title: "📍 Pickup Only",
     pickup_notice_address: "Address: [paste your address here]",
+
+    // Page 2 / order details
+    cart_order_now: "Order now",
+    cart_back: "Back",
+    cart_summary_title: "Order summary",
+    form_timeframe_default: "When do you need it?",
+    timeframe_asap: "As soon as possible",
+    timeframe_two_weeks: "Within 2 weeks",
+    timeframe_this_month: "This month",
+    timeframe_thanksgiving: "For Thanksgiving",
+    timeframe_christmas: "For Christmas",
+    timeframe_specific_date: "Specific date",
+    form_specific_date_label: "Select date",
+    form_notes_placeholder: "Notes (optional)",
+    form_timeframe_error: "Please select when you need it.",
+    form_specific_date_error: "Please select a date.",
+    whatsapp_timeframe_label: "When:",
+    whatsapp_notes_label: "Notes:",
   },
 };
+
+// Timeframe dropdown option values, in display order. Labels come from
+// TRANSLATIONS[lang][`timeframe_${value}`].
+const TIMEFRAME_OPTIONS = [
+  "asap",
+  "two_weeks",
+  "this_month",
+  "thanksgiving",
+  "christmas",
+  "specific_date",
+];
 
 const WHATSAPP_ICON_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.01 2C6.48 2 2 6.48 2 12c0 1.87.5 3.62 1.38 5.12L2 22l4.99-1.31A9.96 9.96 0 0 0 12.01 22C17.53 22 22 17.52 22 12S17.53 2 12.01 2Zm5.71 14.2c-.24.68-1.4 1.3-1.93 1.35-.5.06-1.02.29-3.4-.7-2.87-1.2-4.7-4.1-4.85-4.3-.14-.2-1.16-1.55-1.16-2.95 0-1.4.73-2.08.99-2.37.26-.28.57-.35.76-.35h.55c.18 0 .42-.03.65.5.24.55.8 1.9.87 2.03.07.14.11.3.02.48-.08.18-.13.3-.26.46-.13.16-.27.35-.39.47-.13.13-.27.27-.11.53.16.27.7 1.16 1.51 1.88 1.04.93 1.92 1.22 2.19 1.36.27.13.42.11.58-.07.16-.18.68-.79.86-1.06.18-.27.36-.22.6-.13.24.09 1.55.73 1.82.87.27.13.44.2.5.31.07.12.07.66-.17 1.34Z"/></svg>`;
 
 const SMS_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
 
 const MESSENGER_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg>`;
+
+const BACK_ARROW_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>`;
 
 // ============================================
 // Menu items — fetched from the Google Sheet via Apps Script.
@@ -208,9 +257,14 @@ function applyLang(lang) {
   const grid = document.querySelector("[data-item-grid]");
   if (grid) renderItems(grid.dataset.itemGrid, lang);
 
-  // Re-render the cart panel if it's currently open
+  // Re-render whichever cart page is currently open
   const overlay = document.querySelector(".cart-overlay");
-  if (overlay && overlay.classList.contains("open")) renderCartPanel(lang);
+  if (overlay && overlay.classList.contains("open")) {
+    renderTimeframeOptions(lang);
+    renderCartPanel(lang);
+    const panel = overlay.querySelector(".cart-panel");
+    if (panel && panel.dataset.page === "2") renderOrderSummary(lang);
+  }
 
   updateCartBadge();
 }
@@ -303,8 +357,9 @@ function saveCustomer(name, phone) {
 
 // orderNumber is optional: when present (normal path) it's included as the
 // first line of the message. When the sheet write fails, the message still
-// sends but without the order number.
-function buildCartMessage(cart, lang, orderNumber) {
+// sends but without the order number. timeframeLabel/notes are optional
+// extras appended after the total.
+function buildCartMessage(cart, lang, orderNumber, timeframeLabel, notes) {
   const t = TRANSLATIONS[lang];
   const lines = cart.map((entry) => {
     const name = entry.name[lang];
@@ -324,26 +379,33 @@ function buildCartMessage(cart, lang, orderNumber) {
     message += `\n\n${t.deposit_label} ${deposit}\n${t.deposit_instructions}`;
   }
 
+  if (timeframeLabel) {
+    message += `\n\n${t.whatsapp_timeframe_label} ${timeframeLabel}`;
+  }
+  if (notes) {
+    message += `\n${t.whatsapp_notes_label} ${notes}`;
+  }
+
   return message;
 }
 
-function buildCartWhatsAppLink(cart, lang, orderNumber) {
+function buildCartWhatsAppLink(cart, lang, orderNumber, timeframeLabel, notes) {
   if (!cart.length) return `https://wa.me/${WHATSAPP_NUMBER}`;
-  const message = buildCartMessage(cart, lang, orderNumber);
+  const message = buildCartMessage(cart, lang, orderNumber, timeframeLabel, notes);
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
-function buildCartSmsLink(cart, lang, orderNumber) {
+function buildCartSmsLink(cart, lang, orderNumber, timeframeLabel, notes) {
   if (!cart.length) return `sms:+${WHATSAPP_NUMBER}`;
-  const message = buildCartMessage(cart, lang, orderNumber);
+  const message = buildCartMessage(cart, lang, orderNumber, timeframeLabel, notes);
   // Works on both iOS and Android; some older iOS versions expect
   // "&body=" instead of "?body=", most modern devices accept either.
   return `sms:+${WHATSAPP_NUMBER}?body=${encodeURIComponent(message)}`;
 }
 
-function buildCartMessengerLink(cart, lang, orderNumber) {
+function buildCartMessengerLink(cart, lang, orderNumber, timeframeLabel, notes) {
   if (!cart.length) return `https://m.me/${FACEBOOK_USERNAME}`;
-  const message = buildCartMessage(cart, lang, orderNumber);
+  const message = buildCartMessage(cart, lang, orderNumber, timeframeLabel, notes);
   return `https://m.me/${FACEBOOK_USERNAME}?text=${encodeURIComponent(message)}`;
 }
 
@@ -372,11 +434,13 @@ function syncGridQuantities() {
 // gets back an order number, then the caller opens WhatsApp/SMS/
 // Messenger with that number included in the message.
 // ============================================
-async function submitOrder(cart, lang, name, phone) {
+async function submitOrder(cart, lang, name, phone, timeframeLabel, notes) {
   const payload = {
     name,
     phone,
     lang,
+    timeframe: timeframeLabel || "",
+    notes: notes || "",
     items: cart.map((entry) => ({
       name: entry.name[lang],
       qty: entry.qty * (entry.packSize || 1),
@@ -403,6 +467,55 @@ async function submitOrder(cart, lang, name, phone) {
   return data.orderNumber;
 }
 
+// Reads/validates the page-2 form fields. Returns null (and shows the
+// error message) if something required is missing.
+function readOrderForm(lang) {
+  const overlay = document.querySelector(".cart-overlay");
+  const t = TRANSLATIONS[lang];
+  const nameInput = overlay.querySelector(".cart-name-input");
+  const phoneInput = overlay.querySelector(".cart-phone-input");
+  const timeframeSelect = overlay.querySelector(".cart-timeframe-select");
+  const specificDateInput = overlay.querySelector(".cart-specific-date-input");
+  const notesInput = overlay.querySelector(".cart-notes-input");
+  const errorEl = overlay.querySelector(".cart-form-error");
+
+  const name = nameInput.value.trim();
+  const phone = phoneInput.value.trim();
+  const timeframeValue = timeframeSelect.value;
+  const specificDate = specificDateInput.value;
+  const notes = notesInput.value.trim();
+
+  if (!name || !phone) {
+    errorEl.textContent = t.form_error;
+    errorEl.style.display = "block";
+    (name ? phoneInput : nameInput).focus();
+    return null;
+  }
+
+  if (!timeframeValue) {
+    errorEl.textContent = t.form_timeframe_error;
+    errorEl.style.display = "block";
+    timeframeSelect.focus();
+    return null;
+  }
+
+  if (timeframeValue === "specific_date" && !specificDate) {
+    errorEl.textContent = t.form_specific_date_error;
+    errorEl.style.display = "block";
+    specificDateInput.focus();
+    return null;
+  }
+
+  errorEl.style.display = "none";
+
+  let timeframeLabel = t[`timeframe_${timeframeValue}`] || timeframeValue;
+  if (timeframeValue === "specific_date" && specificDate) {
+    timeframeLabel = `${timeframeLabel} (${specificDate})`;
+  }
+
+  return { name, phone, timeframeLabel, notes };
+}
+
 // Runs the full checkout flow for one send method: validate -> submit to
 // sheet -> open WhatsApp/SMS/Messenger with the order number -> clear cart.
 // If the sheet write fails, the message still sends, just without a number.
@@ -412,21 +525,11 @@ async function handleCheckout(method, lang) {
   const cart = getCart();
   if (!cart.length) return;
 
+  const form = readOrderForm(lang);
+  if (!form) return;
+  const { name, phone, timeframeLabel, notes } = form;
+
   const t = TRANSLATIONS[lang];
-  const nameInput = overlay.querySelector(".cart-name-input");
-  const phoneInput = overlay.querySelector(".cart-phone-input");
-  const errorEl = overlay.querySelector(".cart-form-error");
-  const name = nameInput.value.trim();
-  const phone = phoneInput.value.trim();
-
-  if (!name || !phone) {
-    errorEl.textContent = t.form_error;
-    errorEl.style.display = "block";
-    (name ? phoneInput : nameInput).focus();
-    return;
-  }
-  errorEl.style.display = "none";
-
   const btns = overlay.querySelectorAll(".cart-checkout-btn");
   const activeBtn = overlay.querySelector(`.cart-checkout-btn[data-method="${method}"]`);
   const activeLabel = activeBtn ? activeBtn.querySelector("span") : null;
@@ -437,7 +540,7 @@ async function handleCheckout(method, lang) {
 
   let orderNumber = null;
   try {
-    orderNumber = await submitOrder(cart, lang, name, phone);
+    orderNumber = await submitOrder(cart, lang, name, phone, timeframeLabel, notes);
   } catch (err) {
     // Sheet write failed — still send the message, just without a number.
     orderNumber = null;
@@ -446,9 +549,9 @@ async function handleCheckout(method, lang) {
   saveCustomer(name, phone);
 
   let url;
-  if (method === "sms") url = buildCartSmsLink(cart, lang, orderNumber);
-  else if (method === "messenger") url = buildCartMessengerLink(cart, lang, orderNumber);
-  else url = buildCartWhatsAppLink(cart, lang, orderNumber);
+  if (method === "sms") url = buildCartSmsLink(cart, lang, orderNumber, timeframeLabel, notes);
+  else if (method === "messenger") url = buildCartMessengerLink(cart, lang, orderNumber, timeframeLabel, notes);
+  else url = buildCartWhatsAppLink(cart, lang, orderNumber, timeframeLabel, notes);
 
   if (method === "sms") {
     window.location.href = url;
@@ -456,7 +559,11 @@ async function handleCheckout(method, lang) {
     window.open(url, "_blank", "noopener");
   }
 
+  // Order is only cleared once a send button is actually pressed, per spec:
+  // the customer can go back and edit freely up until this point.
   saveCart([]);
+  resetOrderForm(overlay);
+  goToPage1();
   renderCartPanel(lang);
   updateCartBadge();
   syncGridQuantities();
@@ -465,8 +572,20 @@ async function handleCheckout(method, lang) {
   if (activeLabel) activeLabel.textContent = originalLabel;
 }
 
+function resetOrderForm(overlay) {
+  const notesInput = overlay.querySelector(".cart-notes-input");
+  const timeframeSelect = overlay.querySelector(".cart-timeframe-select");
+  const specificDateInput = overlay.querySelector(".cart-specific-date-input");
+  if (notesInput) notesInput.value = "";
+  if (timeframeSelect) timeframeSelect.value = "";
+  if (specificDateInput) {
+    specificDateInput.value = "";
+    specificDateInput.style.display = "none";
+  }
+}
+
 // ============================================
-// Cart UI (nav button + slide-out panel)
+// Cart UI (nav button + 2-page slide-out panel)
 // ============================================
 function initCartUI() {
   const navRight = document.querySelector(".nav-right");
@@ -490,36 +609,52 @@ function initCartUI() {
   const overlay = document.createElement("div");
   overlay.className = "cart-overlay";
   overlay.innerHTML = `
-    <div class="cart-panel" role="dialog" aria-modal="true">
+    <div class="cart-panel" data-page="1" role="dialog" aria-modal="true">
       <div class="cart-panel-header">
+        <button type="button" class="cart-back-btn" aria-label="Back">${BACK_ARROW_SVG}</button>
         <h2 class="cart-title" data-i18n="cart_title">Tu orden</h2>
         <button type="button" class="cart-close" aria-label="Close">&times;</button>
       </div>
-      <div class="cart-items"></div>
-      <div class="cart-footer">
-        <div class="cart-total-row">
-          <span data-i18n="cart_total">Total</span>
-          <span class="cart-total-value">$0</span>
+
+      <div class="cart-page cart-page-1">
+        <div class="cart-items"></div>
+        <div class="cart-footer">
+          <div class="cart-total-row">
+            <span data-i18n="cart_total">Total</span>
+            <span class="cart-total-value">$0</span>
+          </div>
+          <div class="cart-deposit-notice"></div>
+          <button type="button" class="cart-order-now-btn" data-i18n="cart_order_now">Ordenar ahora</button>
+          <button type="button" class="cart-clear-btn" data-i18n="cart_clear">Vaciar carrito</button>
         </div>
-        <div class="cart-deposit-notice"></div>
+      </div>
+
+      <div class="cart-page cart-page-2">
+        <h3 class="cart-summary-title" data-i18n="cart_summary_title">Resumen del pedido</h3>
+        <div class="cart-summary"></div>
+        <div class="cart-deposit-notice-2"></div>
         <div class="cart-customer-form">
           <input type="text" class="cart-input cart-name-input" data-i18n-placeholder="form_name_placeholder" placeholder="Tu nombre" autocomplete="name">
           <input type="tel" class="cart-input cart-phone-input" data-i18n-placeholder="form_phone_placeholder" placeholder="Tu número de teléfono" autocomplete="tel">
+          <select class="cart-input cart-timeframe-select"></select>
+          <input type="date" class="cart-input cart-specific-date-input" style="display:none;">
+          <textarea class="cart-input cart-notes-input" rows="2" data-i18n-placeholder="form_notes_placeholder" placeholder="Notas (opcional)"></textarea>
           <p class="cart-form-error"></p>
         </div>
-        <a class="cart-checkout-btn" href="#" data-method="whatsapp">
-          ${WHATSAPP_ICON_SVG}
-          <span data-i18n="cart_checkout">Ordenar por WhatsApp</span>
-        </a>
-        <a class="cart-checkout-btn cart-checkout-btn-secondary" href="#" data-method="sms">
-          ${SMS_ICON_SVG}
-          <span data-i18n="cart_checkout_sms">Enviar por mensaje de texto</span>
-        </a>
-        <a class="cart-checkout-btn cart-checkout-btn-secondary" href="#" data-method="messenger">
-          ${MESSENGER_ICON_SVG}
-          <span data-i18n="cart_checkout_messenger">Enviar por Messenger</span>
-        </a>
-        <button type="button" class="cart-clear-btn" data-i18n="cart_clear">Vaciar carrito</button>
+        <div class="cart-checkout-btns">
+          <a class="cart-checkout-btn" href="#" data-method="whatsapp">
+            ${WHATSAPP_ICON_SVG}
+            <span data-i18n="cart_checkout">Ordenar por WhatsApp</span>
+          </a>
+          <a class="cart-checkout-btn cart-checkout-btn-secondary" href="#" data-method="sms">
+            ${SMS_ICON_SVG}
+            <span data-i18n="cart_checkout_sms">Enviar por mensaje de texto</span>
+          </a>
+          <a class="cart-checkout-btn cart-checkout-btn-secondary" href="#" data-method="messenger">
+            ${MESSENGER_ICON_SVG}
+            <span data-i18n="cart_checkout_messenger">Enviar por Messenger</span>
+          </a>
+        </div>
       </div>
     </div>
   `;
@@ -529,11 +664,18 @@ function initCartUI() {
     if (e.target === overlay) closeCart();
   });
   overlay.querySelector(".cart-close").addEventListener("click", closeCart);
+  overlay.querySelector(".cart-back-btn").addEventListener("click", goToPage1);
+
   overlay.querySelector(".cart-clear-btn").addEventListener("click", () => {
     saveCart([]);
     renderCartPanel(getLang());
     updateCartBadge();
     syncGridQuantities();
+  });
+
+  overlay.querySelector(".cart-order-now-btn").addEventListener("click", () => {
+    if (!getCart().length) return;
+    goToPage2(getLang());
   });
 
   overlay.querySelector(".cart-items").addEventListener("click", (e) => {
@@ -563,14 +705,39 @@ function initCartUI() {
     });
   });
 
+  // Show/hide the specific-date field based on the timeframe dropdown
+  overlay.querySelector(".cart-timeframe-select").addEventListener("change", (e) => {
+    const dateInput = overlay.querySelector(".cart-specific-date-input");
+    dateInput.style.display = e.target.value === "specific_date" ? "block" : "none";
+  });
+
   // Hide the validation error as soon as the customer starts fixing it
-  [".cart-name-input", ".cart-phone-input"].forEach((sel) => {
+  [".cart-name-input", ".cart-phone-input", ".cart-timeframe-select", ".cart-specific-date-input", ".cart-notes-input"].forEach((sel) => {
     overlay.querySelector(sel).addEventListener("input", () => {
       overlay.querySelector(".cart-form-error").style.display = "none";
     });
   });
 
+  renderTimeframeOptions(getLang());
   updateCartBadge();
+}
+
+function renderTimeframeOptions(lang) {
+  const select = document.querySelector(".cart-timeframe-select");
+  if (!select) return;
+  const t = TRANSLATIONS[lang];
+  const previousValue = select.value;
+
+  const optionsHtml = [`<option value="" disabled selected>${t.form_timeframe_default}</option>`]
+    .concat(
+      TIMEFRAME_OPTIONS.map(
+        (value) => `<option value="${value}">${t[`timeframe_${value}`]}</option>`
+      )
+    )
+    .join("");
+
+  select.innerHTML = optionsHtml;
+  if (previousValue) select.value = previousValue;
 }
 
 function openCart() {
@@ -584,6 +751,7 @@ function openCart() {
   if (nameInput && !nameInput.value) nameInput.value = customer.name;
   if (phoneInput && !phoneInput.value) phoneInput.value = customer.phone;
 
+  goToPage1();
   renderCartPanel(getLang());
   overlay.classList.add("open");
   document.body.classList.add("cart-lock-scroll");
@@ -596,6 +764,18 @@ function closeCart() {
   document.body.classList.remove("cart-lock-scroll");
 }
 
+function goToPage1() {
+  const panel = document.querySelector(".cart-panel");
+  if (panel) panel.dataset.page = "1";
+}
+
+function goToPage2(lang) {
+  const panel = document.querySelector(".cart-panel");
+  if (!panel) return;
+  renderOrderSummary(lang);
+  panel.dataset.page = "2";
+}
+
 function renderCartPanel(lang) {
   const overlay = document.querySelector(".cart-overlay");
   if (!overlay) return;
@@ -603,7 +783,7 @@ function renderCartPanel(lang) {
   const cart = getCart();
   const itemsEl = overlay.querySelector(".cart-items");
   const totalEl = overlay.querySelector(".cart-total-value");
-  const checkoutBtns = overlay.querySelectorAll(".cart-checkout-btn");
+  const orderNowBtn = overlay.querySelector(".cart-order-now-btn");
 
   if (!cart.length) {
     itemsEl.innerHTML = `<p class="cart-empty">${t.cart_empty}</p>`;
@@ -641,7 +821,7 @@ function renderCartPanel(lang) {
     depositEl.style.display = "none";
   }
 
-  checkoutBtns.forEach((btn) => btn.classList.toggle("disabled", cart.length === 0));
+  if (orderNowBtn) orderNowBtn.classList.toggle("disabled", cart.length === 0);
 
   overlay.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.getAttribute("data-i18n");
@@ -651,6 +831,46 @@ function renderCartPanel(lang) {
     const key = el.getAttribute("data-i18n-placeholder");
     if (t[key]) el.placeholder = t[key];
   });
+}
+
+// Plain, uneditable text summary shown on page 2. Items can only be
+// changed by going back to page 1.
+function renderOrderSummary(lang) {
+  const overlay = document.querySelector(".cart-overlay");
+  if (!overlay) return;
+  const t = TRANSLATIONS[lang];
+  const cart = getCart();
+  const summaryEl = overlay.querySelector(".cart-summary");
+  const depositEl = overlay.querySelector(".cart-deposit-notice-2");
+  const checkoutBtns = overlay.querySelectorAll(".cart-checkout-btn");
+
+  summaryEl.innerHTML = cart
+    .map((entry) => {
+      const name = entry.name[lang];
+      const subtotal = formatMoney(entry.price * entry.qty);
+      return `
+        <div class="cart-summary-row">
+          <span>${entry.qty}x ${name}</span>
+          <span>${subtotal}</span>
+        </div>`;
+    })
+    .join("");
+
+  summaryEl.innerHTML += `
+    <div class="cart-summary-row cart-summary-total">
+      <span>${t.cart_total}</span>
+      <span>${formatMoney(cartTotal(cart))}</span>
+    </div>`;
+
+  if (cart.length && depositRequired(cart)) {
+    const deposit = formatMoney(depositAmount(cart));
+    depositEl.innerHTML = `<strong>${t.deposit_notice(deposit)}</strong><br>${t.deposit_instructions}`;
+    depositEl.style.display = "block";
+  } else {
+    depositEl.style.display = "none";
+  }
+
+  checkoutBtns.forEach((btn) => btn.classList.toggle("disabled", cart.length === 0));
 }
 
 // ============================================
